@@ -287,13 +287,11 @@
 
     </aside>
 
-
     <main class="main">
 
         <div class="topbar">
             Stupid AI
         </div>
-
 
         <div id="chat">
 
@@ -314,7 +312,6 @@
 
         </div>
 
-
         <div class="input-area">
 
             <div class="input-box">
@@ -326,12 +323,10 @@
                     🎤
                 </button>
 
-
                 <textarea
                     id="messageInput"
                     placeholder="Message My AI..."
                     rows="1"></textarea>
-
 
                 <button
                     id="sendBtn"
@@ -346,7 +341,6 @@
 
     </main>
 
-
     <script type="module">
 
         import {
@@ -354,9 +348,7 @@
             env
         } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.0.1";
 
-
         env.allowLocalModels = false;
-
 
         const chat =
             document.getElementById("chat");
@@ -379,12 +371,10 @@
         const clearBtn =
             document.getElementById("clearBtn");
 
-
         let messages =
             JSON.parse(
                 localStorage.getItem("myAIChat") || "[]"
             );
-
 
         let generator = null;
 
@@ -394,7 +384,6 @@
 
         let loadingMessageShown = false;
 
-
         function saveChat() {
 
             localStorage.setItem(
@@ -403,7 +392,6 @@
             );
 
         }
-
 
         function escapeHTML(text) {
 
@@ -416,7 +404,6 @@
 
         }
 
-
         function addMessage(
             role,
             text,
@@ -427,13 +414,11 @@
                 welcome.remove();
             }
 
-
             const message =
                 document.createElement("div");
 
             message.className =
                 "message " + role;
-
 
             const avatar =
                 document.createElement("div");
@@ -446,7 +431,6 @@
                     ? "You"
                     : "AI";
 
-
             const content =
                 document.createElement("div");
 
@@ -456,7 +440,6 @@
             content.innerHTML =
                 escapeHTML(text);
 
-
             if (role === "assistant") {
 
                 const feedback =
@@ -464,7 +447,6 @@
 
                 feedback.className =
                     "feedback";
-
 
                 const like =
                     document.createElement("button");
@@ -479,7 +461,6 @@
                         );
                     };
 
-
                 const dislike =
                     document.createElement("button");
 
@@ -492,7 +473,6 @@
                             "down"
                         );
                     };
-
 
                 const speak =
                     document.createElement("button");
@@ -507,7 +487,6 @@
                         speakText(text);
                     };
 
-
                 feedback.appendChild(like);
 
                 feedback.appendChild(dislike);
@@ -518,17 +497,14 @@
 
             }
 
-
             message.appendChild(avatar);
 
             message.appendChild(content);
 
             chat.appendChild(message);
 
-
             chat.scrollTop =
                 chat.scrollHeight;
-
 
             if (save) {
 
@@ -543,7 +519,6 @@
 
         }
 
-
         function showThinking() {
 
             const old =
@@ -555,7 +530,6 @@
                 old.remove();
             }
 
-
             const message =
                 document.createElement("div");
 
@@ -564,7 +538,6 @@
 
             message.id =
                 "thinking";
-
 
             message.innerHTML = `
                 <div class="avatar">
@@ -586,14 +559,12 @@
                 </div>
             `;
 
-
             chat.appendChild(message);
 
             chat.scrollTop =
                 chat.scrollHeight;
 
         }
-
 
         function removeThinking() {
 
@@ -608,13 +579,11 @@
 
         }
 
-
         async function loadAI() {
 
             if (generator) {
                 return generator;
             }
-
 
             if (!loadingMessageShown) {
 
@@ -628,7 +597,6 @@
 
             }
 
-
             try {
 
                 generator =
@@ -636,77 +604,40 @@
                         "text-generation",
                         "onnx-community/Qwen3-0.6B-ONNX",
                         {
-                            device: "webgpu",
-                            dtype: "q4f16"
+                            device: "wasm",
+                            dtype: "q8"
                         }
                     );
 
-
                 addMessage(
                     "assistant",
-                    "✅ AI loaded! Ask me something.",
+                    "✅ AI loaded using CPU mode!",
                     false
                 );
 
-
                 return generator;
 
-            } catch (webgpuError) {
+            } catch (error) {
 
-                console.log(
-                    "WebGPU unavailable. Trying CPU.",
-                    webgpuError
+                console.error(error);
+
+                addMessage(
+                    "assistant",
+                    "❌ Could not load the AI model. " +
+                    error.message,
+                    false
                 );
 
-
-                try {
-
-                    generator =
-                        await pipeline(
-                            "text-generation",
-                            "onnx-community/Qwen3-0.6B-ONNX",
-                            {
-                                dtype: "q4"
-                            }
-                        );
-
-
-                    addMessage(
-                        "assistant",
-                        "✅ AI loaded using CPU mode!",
-                        false
-                    );
-
-
-                    return generator;
-
-                } catch (cpuError) {
-
-                    console.error(cpuError);
-
-
-                    addMessage(
-                        "assistant",
-                        "❌ Could not load the AI model. " +
-                        cpuError.message,
-                        false
-                    );
-
-
-                    throw cpuError;
-
-                }
+                throw error;
 
             }
 
         }
 
-
         async function sendMessage() {
 
             const text =
                 input.value.trim();
-
 
             if (
                 !text ||
@@ -715,26 +646,21 @@
                 return;
             }
 
-
             input.value = "";
 
             sendBtn.disabled = true;
-
 
             addMessage(
                 "user",
                 text
             );
 
-
             showThinking();
-
 
             try {
 
                 const ai =
                     await loadAI();
-
 
                 const conversation =
                     messages
@@ -750,7 +676,6 @@
                             }
                         );
 
-
                 const output =
                     await ai(
                         conversation,
@@ -761,16 +686,12 @@
                         }
                     );
 
-
                 removeThinking();
-
 
                 const generated =
                     output[0].generated_text;
 
-
                 let reply = "";
-
 
                 if (
                     Array.isArray(
@@ -793,7 +714,6 @@
 
                 }
 
-
                 if (!reply.trim()) {
 
                     reply =
@@ -801,23 +721,18 @@
 
                 }
 
-
                 addMessage(
                     "assistant",
                     reply
                 );
 
-
                 speakText(reply);
-
 
             } catch (error) {
 
                 removeThinking();
 
-
                 console.error(error);
-
 
                 addMessage(
                     "assistant",
@@ -835,7 +750,6 @@
 
         }
 
-
         function newChat() {
 
             messages = [];
@@ -848,13 +762,11 @@
 
         }
 
-
         function clearChat() {
 
             newChat();
 
         }
-
 
         function speakText(text) {
 
@@ -864,15 +776,12 @@
                 return;
             }
 
-
             speechSynthesis.cancel();
-
 
             const voice =
                 new SpeechSynthesisUtterance(
                     text
                 );
-
 
             voice.lang =
                 "en-US";
@@ -886,10 +795,8 @@
             voice.volume =
                 1;
 
-
             const voices =
                 speechSynthesis.getVoices();
-
 
             const englishVoice =
                 voices.find(
@@ -901,7 +808,6 @@
                     }
                 );
 
-
             if (englishVoice) {
 
                 voice.voice =
@@ -909,13 +815,11 @@
 
             }
 
-
             speechSynthesis.speak(
                 voice
             );
 
         }
-
 
         function giveFeedback(
             button,
@@ -928,18 +832,15 @@
                         "button"
                     );
 
-
             buttons[0].style.opacity =
                 type === "up"
                     ? "1"
                     : "0.3";
 
-
             buttons[1].style.opacity =
                 type === "down"
                     ? "1"
                     : "0.3";
-
 
             console.log(
                 "Feedback:",
@@ -948,24 +849,20 @@
 
         }
 
-
         newChatBtn.addEventListener(
             "click",
             newChat
         );
-
 
         clearBtn.addEventListener(
             "click",
             clearChat
         );
 
-
         sendBtn.addEventListener(
             "click",
             sendMessage
         );
-
 
         input.addEventListener(
             "keydown",
@@ -985,29 +882,23 @@
             }
         );
 
-
         const SpeechRecognition =
             window.SpeechRecognition ||
             window.webkitSpeechRecognition;
-
 
         if (SpeechRecognition) {
 
             recognition =
                 new SpeechRecognition();
 
-
             recognition.continuous =
                 false;
-
 
             recognition.interimResults =
                 false;
 
-
             recognition.lang =
                 "en-US";
-
 
             recognition.onstart =
                 function () {
@@ -1023,14 +914,12 @@
 
                 };
 
-
             recognition.onresult =
                 function (event) {
 
                     const text =
                         event.results[0][0]
                             .transcript;
-
 
                     input.value +=
                         (
@@ -1039,11 +928,9 @@
                                 : ""
                         ) + text;
 
-
                     input.focus();
 
                 };
-
 
             recognition.onend =
                 function () {
@@ -1058,7 +945,6 @@
                         "🎤";
 
                 };
-
 
             recognition.onerror =
                 function (error) {
@@ -1079,7 +965,6 @@
 
                 };
 
-
             micBtn.addEventListener(
                 "click",
                 function () {
@@ -1097,7 +982,6 @@
                 }
             );
 
-
         } else {
 
             micBtn.disabled = true;
@@ -1106,7 +990,6 @@
                 "Speech recognition is not supported in this browser.";
 
         }
-
 
         messages.forEach(
             function (message) {
@@ -1120,7 +1003,6 @@
             }
         );
 
-
         if (
             "speechSynthesis" in window
         ) {
@@ -1128,7 +1010,6 @@
             speechSynthesis.getVoices();
 
         }
-
 
         loadAI().catch(
             function (error) {
