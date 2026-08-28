@@ -488,17 +488,13 @@
                     };
 
                 feedback.appendChild(like);
-
                 feedback.appendChild(dislike);
-
                 feedback.appendChild(speak);
 
                 content.appendChild(feedback);
-
             }
 
             message.appendChild(avatar);
-
             message.appendChild(content);
 
             chat.appendChild(message);
@@ -514,9 +510,7 @@
                 });
 
                 saveChat();
-
             }
-
         }
 
         function showThinking() {
@@ -563,7 +557,6 @@
 
             chat.scrollTop =
                 chat.scrollHeight;
-
         }
 
         function removeThinking() {
@@ -576,7 +569,6 @@
             if (thinking) {
                 thinking.remove();
             }
-
         }
 
         async function loadAI() {
@@ -591,47 +583,76 @@
 
                 addMessage(
                     "assistant",
-                    "⏳ Loading my AI model. The first download may take a while...",
+                    "⏳ Loading my AI model...",
                     false
                 );
-
             }
 
             try {
+
+                console.log(
+                    "Trying fast WebGPU mode..."
+                );
 
                 generator =
                     await pipeline(
                         "text-generation",
                         "onnx-community/Qwen3-0.6B-ONNX",
                         {
-                            device: "wasm",
+                            device: "webgpu",
                             dtype: "q8"
                         }
                     );
 
                 addMessage(
                     "assistant",
-                    "✅ AI loaded using CPU mode!",
+                    "✅ AI loaded using fast WebGPU mode!",
                     false
                 );
 
                 return generator;
 
-            } catch (error) {
+            } catch (webgpuError) {
 
-                console.error(error);
-
-                addMessage(
-                    "assistant",
-                    "❌ Could not load the AI model. " +
-                    error.message,
-                    false
+                console.log(
+                    "WebGPU failed. Switching to CPU...",
+                    webgpuError
                 );
 
-                throw error;
+                try {
 
+                    generator =
+                        await pipeline(
+                            "text-generation",
+                            "onnx-community/Qwen3-0.6B-ONNX",
+                            {
+                                device: "wasm",
+                                dtype: "q8"
+                            }
+                        );
+
+                    addMessage(
+                        "assistant",
+                        "✅ AI loaded using CPU mode.",
+                        false
+                    );
+
+                    return generator;
+
+                } catch (cpuError) {
+
+                    console.error(cpuError);
+
+                    addMessage(
+                        "assistant",
+                        "❌ Could not load the AI model. " +
+                        cpuError.message,
+                        false
+                    );
+
+                    throw cpuError;
+                }
             }
-
         }
 
         async function sendMessage() {
@@ -672,7 +693,6 @@
                                     role: message.role,
                                     content: message.content
                                 };
-
                             }
                         );
 
@@ -711,14 +731,12 @@
 
                     reply =
                         String(generated);
-
                 }
 
                 if (!reply.trim()) {
 
                     reply =
                         "I couldn't generate an answer.";
-
                 }
 
                 addMessage(
@@ -745,9 +763,7 @@
                 sendBtn.disabled = false;
 
                 input.focus();
-
             }
-
         }
 
         function newChat() {
@@ -759,13 +775,10 @@
             );
 
             location.reload();
-
         }
 
         function clearChat() {
-
             newChat();
-
         }
 
         function speakText(text) {
@@ -783,17 +796,10 @@
                     text
                 );
 
-            voice.lang =
-                "en-US";
-
-            voice.rate =
-                1;
-
-            voice.pitch =
-                1;
-
-            voice.volume =
-                1;
+            voice.lang = "en-US";
+            voice.rate = 1;
+            voice.pitch = 1;
+            voice.volume = 1;
 
             const voices =
                 speechSynthesis.getVoices();
@@ -801,24 +807,15 @@
             const englishVoice =
                 voices.find(
                     function (v) {
-
-                        return v.lang
-                            .startsWith("en");
-
+                        return v.lang.startsWith("en");
                     }
                 );
 
             if (englishVoice) {
-
-                voice.voice =
-                    englishVoice;
-
+                voice.voice = englishVoice;
             }
 
-            speechSynthesis.speak(
-                voice
-            );
-
+            speechSynthesis.speak(voice);
         }
 
         function giveFeedback(
@@ -846,7 +843,6 @@
                 "Feedback:",
                 type
             );
-
         }
 
         newChatBtn.addEventListener(
@@ -876,9 +872,7 @@
                     event.preventDefault();
 
                     sendMessage();
-
                 }
-
             }
         );
 
@@ -891,14 +885,11 @@
             recognition =
                 new SpeechRecognition();
 
-            recognition.continuous =
-                false;
+            recognition.continuous = false;
 
-            recognition.interimResults =
-                false;
+            recognition.interimResults = false;
 
-            recognition.lang =
-                "en-US";
+            recognition.lang = "en-US";
 
             recognition.onstart =
                 function () {
@@ -909,9 +900,7 @@
                         "recording"
                     );
 
-                    micBtn.textContent =
-                        "⏹";
-
+                    micBtn.textContent = "⏹";
                 };
 
             recognition.onresult =
@@ -929,7 +918,6 @@
                         ) + text;
 
                     input.focus();
-
                 };
 
             recognition.onend =
@@ -941,9 +929,7 @@
                         "recording"
                     );
 
-                    micBtn.textContent =
-                        "🎤";
-
+                    micBtn.textContent = "🎤";
                 };
 
             recognition.onerror =
@@ -960,9 +946,7 @@
                         "recording"
                     );
 
-                    micBtn.textContent =
-                        "🎤";
-
+                    micBtn.textContent = "🎤";
                 };
 
             micBtn.addEventListener(
@@ -976,9 +960,7 @@
                     } else {
 
                         recognition.start();
-
                     }
-
                 }
             );
 
@@ -988,7 +970,6 @@
 
             micBtn.title =
                 "Speech recognition is not supported in this browser.";
-
         }
 
         messages.forEach(
@@ -999,16 +980,13 @@
                     message.content,
                     false
                 );
-
             }
         );
 
         if (
             "speechSynthesis" in window
         ) {
-
             speechSynthesis.getVoices();
-
         }
 
         loadAI().catch(
@@ -1018,7 +996,6 @@
                     "AI loading failed:",
                     error
                 );
-
             }
         );
 
