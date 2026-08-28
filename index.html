@@ -543,9 +543,7 @@
                     <div class="thinking">
 
                         <div class="dot"></div>
-
                         <div class="dot"></div>
-
                         <div class="dot"></div>
 
                     </div>
@@ -591,7 +589,7 @@
             try {
 
                 console.log(
-                    "Trying fast WebGPU mode..."
+                    "Trying WebGPU..."
                 );
 
                 generator =
@@ -606,7 +604,7 @@
 
                 addMessage(
                     "assistant",
-                    "✅ AI loaded using fast WebGPU mode!",
+                    "✅ AI loaded using fast WebGPU!",
                     false
                 );
 
@@ -615,7 +613,7 @@
             } catch (webgpuError) {
 
                 console.log(
-                    "WebGPU failed. Switching to CPU...",
+                    "WebGPU failed. Using CPU...",
                     webgpuError
                 );
 
@@ -685,7 +683,7 @@
 
                 const conversation =
                     messages
-                        .slice(-10)
+                        .slice(-4)
                         .map(
                             function (message) {
 
@@ -693,6 +691,7 @@
                                     role: message.role,
                                     content: message.content
                                 };
+
                             }
                         );
 
@@ -700,9 +699,8 @@
                     await ai(
                         conversation,
                         {
-                            max_new_tokens: 256,
-                            do_sample: true,
-                            temperature: 0.7
+                            max_new_tokens: 96,
+                            do_sample: false
                         }
                     );
 
@@ -731,12 +729,14 @@
 
                     reply =
                         String(generated);
+
                 }
 
                 if (!reply.trim()) {
 
                     reply =
                         "I couldn't generate an answer.";
+
                 }
 
                 addMessage(
@@ -778,7 +778,9 @@
         }
 
         function clearChat() {
+
             newChat();
+
         }
 
         function speakText(text) {
@@ -960,6 +962,7 @@
                     } else {
 
                         recognition.start();
+
                     }
                 }
             );
@@ -970,6 +973,7 @@
 
             micBtn.title =
                 "Speech recognition is not supported in this browser.";
+
         }
 
         messages.forEach(
@@ -980,13 +984,16 @@
                     message.content,
                     false
                 );
+
             }
         );
 
         if (
             "speechSynthesis" in window
         ) {
+
             speechSynthesis.getVoices();
+
         }
 
         loadAI().catch(
@@ -996,6 +1003,7 @@
                     "AI loading failed:",
                     error
                 );
+
             }
         );
 
