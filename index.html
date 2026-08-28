@@ -341,14 +341,7 @@
 
     </main>
 
-    <script type="module">
-
-        import {
-            pipeline,
-            env
-        } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.0.1";
-
-        env.allowLocalModels = false;
+    <script>
 
         const chat =
             document.getElementById("chat");
@@ -371,18 +364,17 @@
         const clearBtn =
             document.getElementById("clearBtn");
 
+
         let messages =
             JSON.parse(
                 localStorage.getItem("myAIChat") || "[]"
             );
 
-        let generator = null;
 
         let recognition = null;
 
         let isRecording = false;
 
-        let loadingMessageShown = false;
 
         function saveChat() {
 
@@ -392,6 +384,7 @@
             );
 
         }
+
 
         function escapeHTML(text) {
 
@@ -403,6 +396,7 @@
             return div.innerHTML;
 
         }
+
 
         function addMessage(
             role,
@@ -420,6 +414,7 @@
             message.className =
                 "message " + role;
 
+
             const avatar =
                 document.createElement("div");
 
@@ -431,6 +426,7 @@
                     ? "You"
                     : "AI";
 
+
             const content =
                 document.createElement("div");
 
@@ -440,6 +436,7 @@
             content.innerHTML =
                 escapeHTML(text);
 
+
             if (role === "assistant") {
 
                 const feedback =
@@ -447,6 +444,7 @@
 
                 feedback.className =
                     "feedback";
+
 
                 const like =
                     document.createElement("button");
@@ -461,6 +459,7 @@
                         );
                     };
 
+
                 const dislike =
                     document.createElement("button");
 
@@ -474,33 +473,39 @@
                         );
                     };
 
+
                 const speak =
                     document.createElement("button");
 
                 speak.textContent = "🔊";
-
-                speak.title =
-                    "Read answer aloud";
 
                 speak.onclick =
                     function () {
                         speakText(text);
                     };
 
+
                 feedback.appendChild(like);
+
                 feedback.appendChild(dislike);
+
                 feedback.appendChild(speak);
 
                 content.appendChild(feedback);
+
             }
 
+
             message.appendChild(avatar);
+
             message.appendChild(content);
 
             chat.appendChild(message);
 
+
             chat.scrollTop =
                 chat.scrollHeight;
+
 
             if (save) {
 
@@ -510,19 +515,13 @@
                 });
 
                 saveChat();
+
             }
+
         }
 
+
         function showThinking() {
-
-            const old =
-                document.getElementById(
-                    "thinking"
-                );
-
-            if (old) {
-                old.remove();
-            }
 
             const message =
                 document.createElement("div");
@@ -532,6 +531,7 @@
 
             message.id =
                 "thinking";
+
 
             message.innerHTML = `
                 <div class="avatar">
@@ -551,11 +551,14 @@
                 </div>
             `;
 
+
             chat.appendChild(message);
 
             chat.scrollTop =
                 chat.scrollHeight;
+
         }
+
 
         function removeThinking() {
 
@@ -567,96 +570,15 @@
             if (thinking) {
                 thinking.remove();
             }
+
         }
 
-        async function loadAI() {
-
-            if (generator) {
-                return generator;
-            }
-
-            if (!loadingMessageShown) {
-
-                loadingMessageShown = true;
-
-                addMessage(
-                    "assistant",
-                    "⏳ Loading my AI model...",
-                    false
-                );
-            }
-
-            try {
-
-                console.log(
-                    "Trying WebGPU..."
-                );
-
-                generator =
-                    await pipeline(
-                        "text-generation",
-                        "onnx-community/Qwen3-0.6B-ONNX",
-                        {
-                            device: "webgpu",
-                            dtype: "q8"
-                        }
-                    );
-
-                addMessage(
-                    "assistant",
-                    "✅ AI loaded using fast WebGPU!",
-                    false
-                );
-
-                return generator;
-
-            } catch (webgpuError) {
-
-                console.log(
-                    "WebGPU failed. Using CPU...",
-                    webgpuError
-                );
-
-                try {
-
-                    generator =
-                        await pipeline(
-                            "text-generation",
-                            "onnx-community/Qwen3-0.6B-ONNX",
-                            {
-                                device: "wasm",
-                                dtype: "q8"
-                            }
-                        );
-
-                    addMessage(
-                        "assistant",
-                        "✅ AI loaded using CPU mode.",
-                        false
-                    );
-
-                    return generator;
-
-                } catch (cpuError) {
-
-                    console.error(cpuError);
-
-                    addMessage(
-                        "assistant",
-                        "❌ Could not load the AI model. " +
-                        cpuError.message,
-                        false
-                    );
-
-                    throw cpuError;
-                }
-            }
-        }
 
         async function sendMessage() {
 
             const text =
                 input.value.trim();
+
 
             if (
                 !text ||
@@ -665,92 +587,71 @@
                 return;
             }
 
+
             input.value = "";
 
             sendBtn.disabled = true;
+
 
             addMessage(
                 "user",
                 text
             );
 
+
             showThinking();
+
 
             try {
 
-                const ai =
-                    await loadAI();
-
-                const conversation =
-                    messages
-                        .slice(-4)
-                        .map(
-                            function (message) {
-
-                                return {
-                                    role: message.role,
-                                    content: message.content
-                                };
-
-                            }
-                        );
-
-                const output =
-                    await ai(
-                        conversation,
+                const response =
+                    await fetch(
+                        "/api/chat",
                         {
-                            max_new_tokens: 96,
-                            do_sample: false
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+                                message: text
+                            })
                         }
                     );
 
+
+                const data =
+                    await response.json();
+
+
                 removeThinking();
 
-                const generated =
-                    output[0].generated_text;
 
-                let reply = "";
+                if (!response.ok) {
 
-                if (
-                    Array.isArray(
-                        generated
-                    )
-                ) {
-
-                    const last =
-                        generated[
-                            generated.length - 1
-                        ];
-
-                    reply =
-                        last.content || "";
-
-                } else {
-
-                    reply =
-                        String(generated);
+                    throw new Error(
+                        data.error ||
+                        "Unknown server error"
+                    );
 
                 }
 
-                if (!reply.trim()) {
-
-                    reply =
-                        "I couldn't generate an answer.";
-
-                }
 
                 addMessage(
                     "assistant",
-                    reply
+                    data.reply
                 );
 
-                speakText(reply);
 
             } catch (error) {
 
                 removeThinking();
 
+
                 console.error(error);
+
 
                 addMessage(
                     "assistant",
@@ -758,13 +659,17 @@
                     error.message
                 );
 
+
             } finally {
 
                 sendBtn.disabled = false;
 
                 input.focus();
+
             }
+
         }
+
 
         function newChat() {
 
@@ -775,13 +680,16 @@
             );
 
             location.reload();
+
         }
+
 
         function clearChat() {
 
             newChat();
 
         }
+
 
         function speakText(text) {
 
@@ -791,34 +699,29 @@
                 return;
             }
 
+
             speechSynthesis.cancel();
+
 
             const voice =
                 new SpeechSynthesisUtterance(
                     text
                 );
 
+
             voice.lang = "en-US";
+
             voice.rate = 1;
+
             voice.pitch = 1;
-            voice.volume = 1;
 
-            const voices =
-                speechSynthesis.getVoices();
 
-            const englishVoice =
-                voices.find(
-                    function (v) {
-                        return v.lang.startsWith("en");
-                    }
-                );
+            speechSynthesis.speak(
+                voice
+            );
 
-            if (englishVoice) {
-                voice.voice = englishVoice;
-            }
-
-            speechSynthesis.speak(voice);
         }
+
 
         function giveFeedback(
             button,
@@ -831,36 +734,38 @@
                         "button"
                     );
 
+
             buttons[0].style.opacity =
                 type === "up"
                     ? "1"
                     : "0.3";
+
 
             buttons[1].style.opacity =
                 type === "down"
                     ? "1"
                     : "0.3";
 
-            console.log(
-                "Feedback:",
-                type
-            );
         }
+
 
         newChatBtn.addEventListener(
             "click",
             newChat
         );
 
+
         clearBtn.addEventListener(
             "click",
             clearChat
         );
 
+
         sendBtn.addEventListener(
             "click",
             sendMessage
         );
+
 
         input.addEventListener(
             "keydown",
@@ -874,24 +779,30 @@
                     event.preventDefault();
 
                     sendMessage();
+
                 }
+
             }
         );
+
 
         const SpeechRecognition =
             window.SpeechRecognition ||
             window.webkitSpeechRecognition;
+
 
         if (SpeechRecognition) {
 
             recognition =
                 new SpeechRecognition();
 
+
             recognition.continuous = false;
 
             recognition.interimResults = false;
 
             recognition.lang = "en-US";
+
 
             recognition.onstart =
                 function () {
@@ -903,7 +814,9 @@
                     );
 
                     micBtn.textContent = "⏹";
+
                 };
+
 
             recognition.onresult =
                 function (event) {
@@ -912,6 +825,7 @@
                         event.results[0][0]
                             .transcript;
 
+
                     input.value +=
                         (
                             input.value
@@ -919,8 +833,11 @@
                                 : ""
                         ) + text;
 
+
                     input.focus();
+
                 };
+
 
             recognition.onend =
                 function () {
@@ -932,7 +849,9 @@
                     );
 
                     micBtn.textContent = "🎤";
+
                 };
+
 
             recognition.onerror =
                 function (error) {
@@ -949,7 +868,9 @@
                     );
 
                     micBtn.textContent = "🎤";
+
                 };
+
 
             micBtn.addEventListener(
                 "click",
@@ -964,17 +885,20 @@
                         recognition.start();
 
                     }
+
                 }
             );
+
 
         } else {
 
             micBtn.disabled = true;
 
             micBtn.title =
-                "Speech recognition is not supported in this browser.";
+                "Speech recognition is not supported.";
 
         }
+
 
         messages.forEach(
             function (message) {
@@ -983,25 +907,6 @@
                     message.role,
                     message.content,
                     false
-                );
-
-            }
-        );
-
-        if (
-            "speechSynthesis" in window
-        ) {
-
-            speechSynthesis.getVoices();
-
-        }
-
-        loadAI().catch(
-            function (error) {
-
-                console.error(
-                    "AI loading failed:",
-                    error
                 );
 
             }
